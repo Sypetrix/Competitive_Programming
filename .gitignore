@@ -1,0 +1,35 @@
+# Pasta gerada automaticamente (PDF, LaTeX)
+.latex/
+
+# arquivos perdidos no CodeSpaces (teste de rebase)
+main.cpp
+texto.txt
+in.txt
+
+# Script de geração do livro (uso pessoal)
+livro.py
+
+# Arquivos temporários do LaTeX
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Executáveis compilados
+*.exe
+*.o
+*.out
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
