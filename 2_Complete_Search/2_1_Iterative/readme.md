@@ -8,10 +8,6 @@ Esta seção cobre as abordagens iterativas para enumerar todos os elementos de 
 
 Um conjunto de `n` elementos possui exatamente **2ⁿ subconjuntos**. Cada subconjunto pode ser representado por um inteiro `mask` onde cada bit indica se o elemento está incluído ou não.
 
-<p align="center">
-  <img src="../../.assets/mask.png" alt="mask" width="500">
-</p>
-
 ```
 exemplo de mask com n = 3 (101 em binário)
 mask = 0b101  →  { elemento[0], elemento[2] }
@@ -55,10 +51,6 @@ void gerasub(vector<bool>& c, int k, int n) {
 
 Gera todos os subconjuntos de tamanho exato `k` a partir de um array de `n` elementos, sem repetição e sem importar a ordem. Complexidade: **O(k · C(n,k))**.
 
-<p align="center">
-  <img src="../../.assets/subconjunto.png" alt="arvore de subconjunto" width="500">
-</p>
-
 A poda é o detalhe mais importante: se os elementos restantes forem insuficientes para completar a combinação, o laço para mais cedo.
 
 ```cpp
@@ -89,10 +81,6 @@ gera_combinacoes(arr, atual, 0, 0, k);
 ## Permutações
 
 Gera todas as ordenações possíveis de um array. Complexidade: **O(n!)**.
-
-<p align="center">
-  <img src="../../.assets/permutacao.gif" alt="arvore de permutacao" width="500">
-</p>
 
 ### Versão por Swap — O(n!)
 
@@ -147,10 +135,6 @@ do {
 ## Bitmask Tricks
 
 Operações avançadas com máscaras de bits que aparecem frequentemente em DP com bitmask e enumeração eficiente.
-
-<p align="center">
-  <img src="../../.assets/bitwise.png" alt="operacao bitwise" width="500">
-</p>
 
 ### Submáscaras de uma Máscara — O(3ⁿ)
 

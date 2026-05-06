@@ -77,8 +77,6 @@ C(N,2) = N*(N-1)/2                 (pares de N elementos)
 
 Para consultas repetidas de $\binom{N}{K}$ com módulo primo, pré-compute fatoriais e inversos modulares uma única vez.
 
-<!-- Sugestão de imagem: diagrama mostrando fat[], inv[] e a fórmula final -->
-
 ```cpp
 // Pré-processa fatoriais e inversos — chame UMA VEZ na main
 void precompute() {
@@ -165,8 +163,6 @@ Conta elementos que satisfazem **pelo menos uma** condição evitando dupla cont
 $$|A \cup B \cup C| = |A| + |B| + |C| - |A \cap B| - |A \cap C| - |B \cap C| + |A \cap B \cap C|$$
 
 **Regra geral:** soma subconjuntos de tamanho ímpar, subtrai os de tamanho par.
-
-<!-- Sugestão de imagem: diagrama de Venn com 3 conjuntos mostrando as intersecções -->
 
 ```cpp
 // Conta múltiplos de pelo menos um primo em [1, N]

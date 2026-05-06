@@ -1,9 +1,5 @@
 # Grafos (Graphs)
 
-<p align="center">
-  <img src="../.assets/grafo.png" alt="grafo" width="500">
-</p>
-
 Muitos problemas do mundo real (e de maratonas/competições de programação) podem ser modelados como problemas em grafos. Alguns possuem soluções eficientes (polinomiais), enquanto outros não (problemas NP-difíceis). Este diretório aborda os problemas em grafos que mais aparecem em competições de programação, além de suas implementações.
 
 ### Alguns dos tópicos incluem:

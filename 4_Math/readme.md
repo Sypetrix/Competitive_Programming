@@ -13,7 +13,7 @@ Este diretório guarda as implementações dos teoremas matemáticos, sequência
 - **Produto Vetorial (Cross Product):** A ferramenta suprema da geometria computacional para definir Orientação (CCW), intersecção de segmentos e cálculo de áreas (Fórmula do Cadarço), sem depender de trigonometria (senos/cossenos).
 - **Polígonos:** Algoritmos como Ponto em Polígono e a construção do Fecho Convexo (Convex Hull) utilizando o clássico *Graham Scan* em $O(N \log N)$.
 
-### 🛠️ Cuidados e Pré-requisitos:
+### Cuidados e Pré-requisitos:
 
 As submissões dessa área exigem atenção dobrada aos detalhes da linguagem C++:
 

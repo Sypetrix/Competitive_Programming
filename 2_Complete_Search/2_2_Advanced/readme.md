@@ -8,10 +8,6 @@ Esta seção cobre as principais otimizações e variações da Busca Completa u
 
 O Backtracking é uma Busca Completa com **poda**: ao perceber que um caminho não pode levar a uma solução válida ou melhor, ele **abandona esse ramo imediatamente** e volta (backtrack) para tentar outra opção.
 
-<p align="center">
-  <img src="../../.assets/backtracking_arvore.png" alt="Arvore de Backtracking" width="500">
-</p>
-
 A estrutura de toda função de backtracking segue o mesmo padrão:
 
 ```cpp
@@ -72,10 +68,6 @@ colunas[c] = diag1[linha + c] = diag2[linha - c + n - 1] = false; // Desmarca
 
 O IDDFS combina o **baixo consumo de memória da DFS** com a **garantia de caminho mínimo da BFS**, rodando repetidas DFS com limite de profundidade crescente.
 
-<p align="center">
-  <img src="../../.assets/IDDFS.png" alt="Busca DFS Iterativa" width="500">
-</p>
-
 - A cada iteração, o limite de profundidade aumenta em 1
 - Apesar de recalcular nós rasos repetidamente, a complexidade assintótica é **igual à BFS** — os nós mais profundos dominam o custo
 - Uso de memória: **O(Profundidade)** — muito melhor que a BFS em grafos largos
@@ -105,10 +97,6 @@ for (int limite = 0; limite <= max_prof; limite++)
 
 Divide o problema em **duas metades**, resolve cada uma independentemente e combina os resultados. Transforma O(2ⁿ) em **O(2^(n/2) · log n)** — essencial quando n ≤ 40.
 
-<p align="center">
-  <img src="../../.assets/meet_in_middle.png" alt="meet_in_middle" width="500">
-</p>
-
 **Aplicação típica:** verificar se algum subconjunto de um array soma exatamente `alvo`.
 
 ```
@@ -136,10 +124,6 @@ for (long long se : soma_esq) {
 ## Busca Binária na Resposta
 
 Em vez de buscar a resposta diretamente, aplica Busca Binária sobre o **espaço de possíveis respostas** e verifica cada candidato com uma função `check()` eficiente.
-
-<p align="center">
-  <img src="../../.assets/binary.jpg" alt="binary_search" width="500">
-</p>
 
 **Quando usar:** o problema pede um valor ótimo (mínimo ou máximo) e é possível verificar em O(N) se um valor `x` é viável.
 

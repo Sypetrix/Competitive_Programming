@@ -1,9 +1,5 @@
 # Grids (Grades e Matrizes)
 
-<p align="center">
-  <img src="../.assets/grid.png" alt="Grid" width="500">
-</p>
-
 Muitos problemas de programação competitiva utilizam matrizes para representar mapas, tabuleiros de jogos ou áreas geográficas. Embora possam ser visualizados como grafos implícitos (onde cada célula é um nó e as células adjacentes são conectadas por arestas), os problemas em **Grids** possuem particularidades de implementação que permitem resoluções mais diretas e otimizadas.
 
 ### Alguns dos tópicos incluem:
