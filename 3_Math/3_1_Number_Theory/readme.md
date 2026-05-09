@@ -18,7 +18,7 @@ Em maratonas de programação, problemas de Teoria dos Números raramente aceita
 
 ---
 
-## 1. Crivo de Eratóstenes e Fatoração
+## Crivo de Eratóstenes e Fatoração
 
 O motor principal para a maioria dos problemas matemáticos. Usamos um `bitset` para comprimir a memória, permitindo gerar primos até $10^7$ quase instantaneamente.
 
@@ -46,7 +46,7 @@ void crivo(ll limite) {
 
 ---
 
-## 2. Algoritmo de Euclides Estendido e Inverso Modular
+## Algoritmo de Euclides Estendido e Inverso Modular
 
 O Euclides Estendido não apenas encontra o MDC (Maior Divisor Comum), mas também os coeficientes de Bézout ($x$ e $y$) que satisfazem $Ax + By = MDC(A, B)$. Isso é a base para a divisão modular.
 
@@ -75,7 +75,7 @@ ll invMod(ll a, ll m) {
 
 ---
 
-## 3. Equações Diofantinas Lineares
+## Equações Diofantinas Lineares
 
 Resolve problemas do tipo "com moedas de valor A e notas de valor B, como pagar exatamente o valor C?".
 
@@ -96,7 +96,7 @@ bool diophantine(ll a, ll b, ll c, ll &x0, ll &y0, ll &g) {
 
 ---
 
-## 4. Fórmula de Legendre e "Factovisors"
+## Fórmula de Legendre e "Factovisors"
 
 Se o problema falar em dividir $N!$ (fatorial gigante) por algum número, esqueça os tipos comuns (`long long` estoura em $21!$). A Fórmula de Legendre conta a multiplicidade de um primo $p$ em $N!$.
 
@@ -116,7 +116,7 @@ ll legendre(ll n, ll p) {
 
 ---
 
-## 5. Função Totiente de Euler ($\phi$) e Divisores
+## Função Totiente de Euler ($\phi$) e Divisores
 
 A função $\phi(N)$ retorna a quantidade de inteiros de $1$ a $N$ que são coprimos com $N$ (ou seja, $MDC(x, N) = 1$). A contagem de divisores usa a fatoração prima.
 
@@ -141,7 +141,7 @@ ll phi(ll n) {
 
 ---
 
-## 6. Busca de Ciclos (Algoritmo de Floyd)
+## Busca de Ciclos (Algoritmo de Floyd)
 
 Também conhecido como o algoritmo da "Lebre e da Tartaruga" (Hare and Tortoise). Ocupa apenas $O(1)$ de memória para encontrar ciclos numa sequência pseudo-aleatória $x_{i} = f(x_{i-1})$.
 

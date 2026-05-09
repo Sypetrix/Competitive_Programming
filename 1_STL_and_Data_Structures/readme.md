@@ -1,27 +1,84 @@
-# STL (Estrutra de Dados)
+# STL e Estruturas de Dados
 
-Uma Estrutura de Dados (ED) é um meio de armazenar e organizar dados. Diferentes estruturas possuem diferentes forças e fraquezas. Ao projetar um algoritmo para competições, é crucial escolher uma que permita inserções, buscas e atualizações eficientes, dependendo da necessidade do problema.
+Uma **Estrutura de Dados** define como os dados são organizados e acessados. A escolha certa determina se uma solução passa no tempo limite ou recebe **TLE** — e em maratonas de programação, essa escolha precisa ser rápida e segura.
 
-*Embora a estrutura de dados não resolva o problema sozinha (o algoritmo que opera sobre ela sim), a escolha da ED correta é a diferença entre receber um Accepted ou um Time Limit Exceeded (TLE).*
+O C++ resolve isso através da **STL** (Standard Template Library): um conjunto de contêineres, algoritmos e utilitários altamente otimizados, prontos para uso imediato. O princípio é simples: use sempre as ferramentas prontas da linguagem antes de implementar qualquer coisa do zero.
 
-### Na programação competitiva, você deve usar a STL porque:
+---
 
-- **Velocidade de Implementação:** As estruturas já estão prontas e testadas. Isso permite que você foque na lógica do problema em vez de gastar tempo implementando a estrutura do zero.
-- **Confiabilidade:** As implementações da STL são altamente otimizadas e seguras contra bugs comuns de implementação manual.
-- **Eficiência de Tempo:** Elas garantem as complexidades ideais (como $O(\log N)$ para mapas ou filas de prioridade) necessárias para passar nos limites de tempo.
+## Por que dominar a STL?
 
-A regra de ouro é o princípio `KISS` (`Keep It Short and Simple`): utilize sempre as ferramentas prontas da linguagem. Muitos competidores usam `std::priority_queue` sem precisar implementar um Heap manualmente, ou `std::map` sem precisar construir uma Árvore Rubro-Negra. Para a maioria dos problemas, o uso correto da biblioteca é suficiente.
+- **Velocidade de implementação** — contêineres prontos e testados, sem bugs de implementação manual.
+- **Garantia de complexidade** — `std::map` é sempre O(log N), `std::unordered_map` é O(1) amortizado, `std::priority_queue` é O(log N). Sem surpresas.
+- **Legibilidade** — código mais curto e claro significa menos tempo depurando durante a prova.
 
-### O que você deve dominar:
+> **Regra de ouro:** use `std::priority_queue` ao invés de implementar um heap, `std::map` ao invés de uma BST manual, e `std::sort` ao invés de qualquer algoritmo de ordenação próprio. A única exceção é quando a STL genuinamente não oferece o que você precisa — aí entram as estruturas customizadas.
 
-- **Complexidade de Tempo/Espaço:** Entender o custo de cada operação (ex: busca em um `vector` é $O(N)$, mas em um `set` é $O(\log N)$).
-- **Escolha da Estrutura:** Saber qual ED se encaixa nos requisitos de busca, inserção e ordenação do problema.
-- **Limitações:** Entender quando a STL não é suficiente e você precisa de algo mais específico (como uma *Segment Tree*).
+---
 
-### Divisão do conteúdo:
+## Organização do Capítulo
 
-- **Estruturas Lineares:** Manipulação básica com `std::vector`, `std::stack`, `std::queue` e tópicos especiais como **Bitmask** e **Big Integer**.
-- **Estruturas Não-Lineares:** Uso de `std::priority_queue` (Heaps), `std::unordered_map` (Hash Tables) e `std::map/set` (Árvores de Busca Binária).
-- **Utilidades:** Casos onde a STL não possui implementação pronta e você deve construir sua própria biblioteca (ex: *Union-Find Disjoint Sets*, *Fenwick Tree*).
+| Seção | O que contém |
+|---|---|
+| **Linear** | `vector`, `stack`, `queue`, `deque`, `string` e KMP |
+| **Non-Linear** | `set`, `map`, `multiset`, `priority_queue`, `unordered_set`, `unordered_map` |
+| **Monotonic** | Pilha e fila monotônicas — padrões clássicos de otimização |
+| **Bit Manipulation** | Operações bitwise, truques com bits, bitmask |
+| **Utils** | Union-Find, Fenwick Tree, Segment Tree, Sparse Table, Trie, BigInt |
 
-*Lembre-se: O objetivo em uma competição é resolver o problema de forma rápida e correta. Conhecer bem a sua biblioteca de ferramentas é meio caminho andado para o sucesso.*
+---
+
+## Tabela Geral de Complexidades
+
+| Estrutura | Acesso | Busca | Inserção | Remoção | Ordenado? |
+|---|---|---|---|---|---|
+| `vector` | O(1) | O(N) | O(1)* / O(N) | O(N) | Não |
+| `deque` | O(1) | O(N) | O(1) nas pontas | O(1) nas pontas | Não |
+| `stack` / `queue` | O(1) topo/frente | — | O(1) | O(1) | Não |
+| `set` / `map` | — | O(log N) | O(log N) | O(log N) | Sim |
+| `multiset` | — | O(log N) | O(log N) | O(log N) | Sim |
+| `priority_queue` | O(1) topo | — | O(log N) | O(log N) | Parcial |
+| `unordered_set/map` | — | O(1)** | O(1)** | O(1)** | Não |
+| Union-Find | — | O(α(N)) | O(α(N)) | — | Não |
+| Fenwick Tree | — | O(log N) | O(log N) | O(log N) | Não |
+| Segment Tree | — | O(log N) | O(log N) | O(log N) | Não |
+| Sparse Table | — | O(1) | O(N log N) | — | Não |
+| Trie | — | O(L) | O(L) | O(L) | Prefixo |
+
+*\* amortizado | \*\* médio, pior caso O(N)*
+
+---
+
+## Como escolher a estrutura certa
+
+```
+Preciso de acesso por índice?
+├── Sim → vector (ou deque se inserir nas duas pontas)
+└── Não
+    ├── Preciso sempre do maior/menor?
+    │   └── priority_queue (heap)
+    ├── Preciso buscar por chave com ordenação?
+    │   └── map / set
+    ├── Preciso de busca por chave rápida (sem ordenação)?
+    │   └── unordered_map / unordered_set
+    ├── Preciso gerenciar componentes conexas?
+    │   └── Union-Find
+    ├── Preciso de queries em intervalos?
+    │   ├── Apenas soma/ponto update → Fenwick Tree
+    │   ├── Range query + range update → Segment Tree
+    │   └── Range minimum query estático → Sparse Table
+    └── Preciso buscar prefixos de strings?
+        └── Trie
+```
+
+---
+
+## Cuidados Gerais
+
+**Overflow:** ao multiplicar dois valores da ordem de 10⁹, o resultado pode ultrapassar `int`. Use `long long` preventivamente em produtos e somas acumuladas. Priorize utilizar *BigInt* nesses casos ou uma linguagem que não contenha limites (como Python).
+
+**Iteradores inválidos:** após `insert` ou `erase` em `vector`, todos os iteradores para aquele vetor são invalidados. Em `map`/`set`, apenas o iterador do elemento removido é invalidado.
+
+**`unordered` no Codeforces:** tabelas hash podem sofrer ataques de colisão com inputs maliciosos. Use um custom hash ou prefira `std::map` quando a performance for crítica e o juiz for adversarial.
+
+**`.clear()` vs swap:** `stack` e `queue` não possuem `.clear()`. Para limpar em O(1), use o truque `ContainerType().swap(c)`.

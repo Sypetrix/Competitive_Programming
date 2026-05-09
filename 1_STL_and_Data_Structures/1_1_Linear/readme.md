@@ -1,8 +1,6 @@
 # Estruturas Lineares
 
-Estruturas lineares organizam os dados em sequência — cada elemento tem um predecessor e um sucessor. São a base de quase todo algoritmo em programação competitiva.
-
-<!-- Sugestão de imagem: diagrama comparando vector, stack, queue e deque lado a lado -->
+Estruturas lineares organizam dados em sequência: cada elemento tem um predecessor e um sucessor direto. São a base de quase todo algoritmo em programação competitiva — desde a BFS mais simples até parsers de strings complexos.
 
 ---
 
@@ -10,13 +8,14 @@ Estruturas lineares organizam os dados em sequência — cada elemento tem um pr
 
 | Estrutura | Acesso | Inserção/Remoção | Uso típico |
 |---|---|---|---|
-| `vector` | O(1) aleatório | O(1) no final | Array dinâmico geral |
+| `vector` | O(1) aleatório | O(1) no final* | Array dinâmico geral |
 | `deque` | O(1) aleatório | O(1) nas duas pontas | Sliding window, BFS com custo |
 | `array` | O(1) aleatório | Tamanho fixo | Substituir `int arr[N]` com STL |
-| `stack` | O(1) no topo | O(1) no topo | DFS, parênteses, pilha monotônica |
+| `stack` | O(1) no topo | O(1) no topo | DFS iterativa, parênteses, pilha monotônica |
 | `queue` | O(1) nas pontas | O(1) nas pontas | BFS |
-| `string` | O(1) por índice | O(1) no final | Manipulação de texto |
-| `bitset` | O(1) por bit | O(1) por bit | DP de bitmask, popcount rápido |
+| `string` | O(1) por índice | O(1) no final* | Manipulação de texto |
+
+*\* amortizado*
 
 ---
 
@@ -26,26 +25,22 @@ Array dinâmico que dobra de capacidade automaticamente. O contêiner mais usado
 
 ```cpp
 vector<int> v = {1, 2, 3};
-v.push_back(4);       // [1, 2, 3, 4]
-v.pop_back();         // [1, 2, 3]
-v[0];                 // acesso O(1)
+v.push_back(4);                    // O(1) amortizado
+v.pop_back();                      // O(1)
+v[0];                              // acesso O(1)
 v.size(); v.empty();
 sort(v.begin(), v.end());
 reverse(v.begin(), v.end());
-```
 
-**Remover duplicatas (sort → unique → erase):**
-```cpp
+// Remover duplicatas (sort → unique → erase)
 sort(v.begin(), v.end());
 v.erase(unique(v.begin(), v.end()), v.end());
-```
 
-**Matriz 2D:**
-```cpp
+// Matriz 2D
 vector<vector<int>> mat(linhas, vector<int>(colunas, 0));
 ```
 
-> **Evite** `v = v + elemento` em loops — cria uma cópia O(N) a cada iteração. Use sempre `push_back`.
+> **Nunca faça** `v = v + elemento` em loops — cria uma cópia O(N) a cada iteração. Use sempre `push_back`.
 
 ---
 
@@ -58,7 +53,7 @@ deque<int> dq;
 dq.push_back(10);   dq.push_front(20);
 dq.pop_back();      dq.pop_front();
 dq.front();         dq.back();
-dq[i]; // acesso aleatório O(1)
+dq[i];              // acesso aleatório O(1)
 ```
 
 **Sliding Window Maximum — O(N):**
@@ -80,54 +75,31 @@ Princípio **LIFO** (Last-In, First-Out). Inserção e remoção apenas no topo.
 
 ```cpp
 stack<int> s;
-s.push(10); s.emplace(20);
+s.push(10);
 s.top();    // lê o topo sem remover
-s.pop();    // remove o topo (não retorna valor — leia antes!)
+s.pop();    // remove o topo (não retorna valor — leia top() antes!)
 s.size();   s.empty();
-stack<int>().swap(s); // limpa em O(1) (não existe .clear())
+stack<int>().swap(s); // limpa em O(1) — não existe .clear()
 ```
 
-**Pilha Monotônica — Próximo Elemento Maior em O(N):**
-```cpp
-stack<int> idx;
-for (int i = 0; i < n; i++) {
-    while (!idx.empty() && arr[idx.top()] < arr[i]) {
-        resultado[idx.top()] = arr[i];
-        idx.pop();
-    }
-    idx.push(i);
-}
-```
-
-**Validação de Parênteses:**
-```cpp
-for (char c : expr) {
-    if (c == '(' || c == '[' || c == '{') s.push(c);
-    else {
-        if (s.empty()) return false;
-        if ((c==')' && s.top()=='(') || ...) s.pop();
-        else return false;
-    }
-}
-return s.empty();
-```
+> **Atenção:** os padrões de **pilha monotônica** (próximo elemento maior/menor) estão na seção **Monotonic**.
 
 ---
 
 ## Queue
 
-**Queue** — princípio **FIFO** (First-In, First-Out). Base da BFS.
+Princípio **FIFO** (First-In, First-Out). Base da BFS.
 
 ```cpp
 queue<int> q;
-q.push(10); q.emplace(20);
+q.push(10);
 q.front();  q.back();
-q.pop();    // remove a frente (não retorna valor!)
+q.pop();    // remove a frente (não retorna valor — leia front() antes!)
 q.size();   q.empty();
-queue<int>().swap(q); // limpa em O(1) (não existe .clear())
+queue<int>().swap(q); // limpa em O(1) — não existe .clear()
 ```
 
-> **Atenção:** tanto `stack` quanto `queue` não possuem `.clear()`. Use o truque do swap.
+> `stack` e `queue` não possuem `.clear()`. Use o truque do swap para limpar em O(1).
 
 ---
 
@@ -139,7 +111,7 @@ Funciona como um `vector<char>` com métodos extras para texto.
 string s = "maratona";
 s.length();           // tamanho
 s[i];                 // acesso O(1)
-s += "s";             // concatenação O(1) — use +=, não s = s + "x"
+s += "s";             // concatenação O(1) amortizado — use +=, nunca s = s + "x" em loop
 s.substr(0, 4);       // "mara" — O(K)
 s.find("rat");        // posição ou string::npos
 s.rfind('a');         // busca da direita
@@ -153,22 +125,20 @@ sort(s.begin(), s.end());
 reverse(s.begin(), s.end());
 ```
 
-> **Armadilha:** após `cin >> n`, use `cin.ignore()` antes de `getline(cin, s)` para consumir o `\n` que sobrou.
+> **Armadilha:** após `cin >> n`, use `cin.ignore()` antes de `getline(cin, s)` para consumir o `\n` que ficou no buffer.
 
 ---
 
-## Algoritmo KMP - String
+## KMP — Busca de Padrão em String
 
 Busca um padrão `P` dentro de um texto `T` em **O(N + M)**, evitando comparações redundantes com o array `pi` (failure function).
-
-<!-- Sugestão de imagem: diagrama do array pi para o padrão "ABABC" -->
 
 ```
 pi[i] = tamanho do maior prefixo de P[0..i] que também é sufixo
 ```
 
 ```cpp
-// 1. Pré-processa o padrão — O(M)
+// Pré-processa o padrão — O(M)
 vector<int> compute_pi(const string& P) {
     int m = P.size();
     vector<int> pi(m, 0);
@@ -180,7 +150,7 @@ vector<int> compute_pi(const string& P) {
     return pi;
 }
 
-// 2. Busca no texto — O(N)
+// Conta ocorrências de P em T — O(N)
 int kmp(const string& T, const string& P) {
     vector<int> pi = compute_pi(P);
     int count = 0;
@@ -193,7 +163,7 @@ int kmp(const string& T, const string& P) {
 }
 ```
 
-> **Use KMP quando** `N` e `M` forem grandes (ex: N = 10⁶). Para padrões pequenos, `s.find()` é suficiente.
+> **Use KMP quando** N e M forem grandes (ex: N = 10⁶). Para padrões pequenos, `s.find()` é suficiente.
 
 ---
 
@@ -216,21 +186,3 @@ a ^= c;           // XOR
 ```
 
 > **Uso clássico em CP:** DP de subconjuntos, crivo de Eratóstenes otimizado, e problemas de contagem onde o estado cabe em bits.
-
----
-
-## BigInt
-
-Inteiro de precisão arbitrária para quando os valores ultrapassam o limite do `long long` (~9.2 × 10¹⁸).
-
-```cpp
-BigInt a("12345678901234567890");
-BigInt b("98765432109876543210");
-
-BigInt c = a + b;
-BigInt d = a * b;
-bool maior = (b > a);
-cout << c << "\n";
-```
-
-> **Use BigInt quando** o enunciado pedir resultados com mais de 18 dígitos e não houver módulo. Se houver módulo, prefira `long long` com `% MOD`.
