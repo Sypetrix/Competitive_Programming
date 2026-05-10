@@ -1,147 +1,236 @@
-# Geometria Computacional (Computational Geometry)
+# Algoritmos em Polígonos (Algorithms on Polygons)
 
-Problemas de geometria são conhecidos por serem os mais traiçoeiros das maratonas: a lógica parece simples no papel, mas a implementação esconde armadilhas de precisão numérica, casos degenerados e comparações inválidas com ponto flutuante. A chave para não perder pontos por bugs sutis é construir tudo sobre primitivas bem testadas, especialmente o **produto vetorial**.
+Polígonos são a estrutura central da geometria computacional em CP. Esta seção cobre os algoritmos mais cobrados: área, perímetro, ponto dentro do polígono, fecho convexo e centróide.
 
 ---
 
 ## Visão Geral
 
-| Arquivo | Complexidade | Utilização Típica |
+| Algoritmo / Arquivo | Complexidade | Uso típico |
 |---|---|---|
-| `point_vector` | O(1) por operação | Struct base: operadores, distâncias, rotação, projeção. |
-| `cross_product` | O(1) | Orientação de pontos, interseção de segmentos, área de triângulo. |
-| `convex_hull` | O(N log N) | Menor polígono convexo envolvendo N pontos (Monotone Chain). |
-| `polygon` | O(N) | Área (Shoelace), ponto dentro do polígono (Ray Casting), centróide. |
+| `polygon.cpp` — Área (Shoelace) | O(N) | Área de qualquer polígono simples |
+| `polygon.cpp` — Ponto em polígono | O(N) | Ray Casting: dentro / fora / borda |
+| `polygon.cpp` — Centróide | O(N) | Centro de massa geométrico |
+| `polygon.cpp` — Is Convex | O(N) | Verificar convexidade |
+| `convex_hull.cpp` — Monotone Chain | O(N log N) | Menor polígono convexo contendo N pontos |
+| `cross_product.cpp` — Interseção | O(1) | Segmentos se cruzam? Ponto de cruzamento? |
 
 ---
 
-## Pré-requisitos e Armadilhas
+## Área do Polígono — Fórmula do Cadarço (Shoelace)
 
-Antes de usar qualquer função deste módulo, internalize estas três regras:
+Funciona para qualquer polígono **simples** (sem auto-interseções), convexo ou côncavo. Os vértices podem estar em ordem CCW ou CW.
 
-**1. Nunca compare floats com `==`.**
-Use sempre a constante de tolerância `EPS = 1e-9`:
-```cpp
-// ERRADO
-if (a == b) { ... }
-
-// CERTO
-if (abs(a - b) < EPS) { ... }
+```
+Área = (1/2) |Σᵢ (xᵢ · yᵢ₊₁ − xᵢ₊₁ · yᵢ)|
 ```
 
-**2. Use `long double` para máxima precisão.**
-`double` tem ~15 dígitos significativos; `long double` tem ~18. Em geometria, a diferença importa.
+```cpp
+ld polygonAreaSigned(const vector<Point>& poly) {
+    ld area = 0;
+    int n = poly.size();
+    for (int i = 0; i < n; i++)
+        area += poly[i].cross(poly[(i+1) % n]);
+    return area / 2.0L;
+}
 
-**3. O produto vetorial é a base de tudo.**
-`cross(A, B, C) = (B - A) × (C - A)` determina orientação, detecta colinearidade e calcula áreas. Quando em dúvida, reduza o problema ao produto vetorial.
+ld polygonArea(const vector<Point>& poly) {
+    return abs(polygonAreaSigned(poly));
+}
+```
+
+O **sinal** da área não-absoluta indica a orientação:
+- `> 0` → vértices em ordem Anti-Horária (CCW)
+- `< 0` → vértices em ordem Horária (CW)
 
 ---
 
-## Point e Vetor (point_vector.cpp)
-
-O `struct Point` representa tanto um ponto no plano quanto um vetor 2D. Toda a geometria é construída sobre ele.
+## Perímetro
 
 ```cpp
-Point A(1, 2), B(4, 6);
-
-ld d  = A.dist(B);        // Distância euclidiana
-ld d2 = A.dist2(B);       // Distância ao quadrado (sem sqrt — preferir quando possível)
-ld dp = (B - A).dot(C - A);   // Produto escalar
-ld cp = (B - A).cross(C - A); // Produto vetorial
-
-Point M = midpoint(A, B); // Ponto médio
-ld h = distToSegment(P, A, B); // Distância de P ao segmento AB
+ld polygonPerimeter(const vector<Point>& poly) {
+    ld perim = 0;
+    int n = poly.size();
+    for (int i = 0; i < n; i++)
+        perim += (poly[(i+1)%n] - poly[i]).length();
+    return perim;
+}
 ```
-
-> **Use `dist2()` no lugar de `dist()`** sempre que precisar apenas comparar distâncias (ex: "P é o mais próximo de Q?"). Isso evita a chamada custosa de `sqrtl` e elimina um nível de imprecisão.
 
 ---
 
-## Produto Vetorial e Orientação (cross_product.cpp)
+## Ponto Dentro do Polígono — Ray Casting — O(N)
 
-A função `orient(A, B, C)` é a primitiva mais importante desta seção. Ela retorna `+1` (CCW), `-1` (CW) ou `0` (colinear).
+Lança um raio horizontal para a direita a partir do ponto P e conta quantas arestas ele cruza. Número ímpar → dentro; par → fora. Trata bordas explicitamente.
 
 ```cpp
-// Sentido do giro A → B → C
-int o = orient(A, B, C);
-// o == +1: C está à esquerda de AB (anti-horário)
-// o == -1: C está à direita de AB (horário)
-// o ==  0: A, B, C são colineares
+// Retorna: 1 = dentro, 0 = na borda, -1 = fora
+int pointInPolygon(Point P, const vector<Point>& poly) {
+    int n = poly.size(), inside = 0;
 
-// Dois segmentos AB e CD se cruzam?
-bool cruzam = segmentsIntersect(A, B, C, D);
+    for (int i = 0, j = n-1; i < n; j = i++) {
+        Point A = poly[i], B = poly[j];
 
-// Ponto exato de interseção entre as retas AB e CD
-Point P = lineIntersection(A, B, C, D);
+        // P está sobre a aresta AB?
+        if (abs((B-A).cross(P-A)) < EPS &&
+            min(A.x,B.x)-EPS <= P.x && P.x <= max(A.x,B.x)+EPS &&
+            min(A.y,B.y)-EPS <= P.y && P.y <= max(A.y,B.y)+EPS)
+            return 0; // na borda
 
-// Área do triângulo ABC
-ld area = triangleArea(A, B, C);
+        // Raio horizontal cruza a aresta?
+        if ((A.y <= P.y+EPS) != (B.y <= P.y+EPS)) {
+            ld xCross = A.x + (P.y-A.y)*(B.x-A.x)/(B.y-A.y);
+            if (P.x < xCross + EPS) inside ^= 1;
+        }
+    }
+    return inside ? 1 : -1;
+}
 ```
 
-> **Atenção em `lineIntersection`:** a função pressupõe que as retas não são paralelas. Verifique antes com `orient` ou checando se o denominador é diferente de zero.
+> Use com cuidado em bordas: o retorno `0` indica que o ponto está **exatamente** sobre uma aresta. Decida antes como tratar esse caso conforme o enunciado.
 
 ---
 
-## Fecho Convexo — Monotone Chain (convex_hull.cpp)
-
-O algoritmo de Andrew constrói o menor polígono convexo que envolve todos os N pontos, varrendo da esquerda para a direita para montar as cadeias inferior e superior separadamente.
+## Centróide do Polígono — O(N)
 
 ```cpp
-vector<Point> pts = { ... };
-vector<Point> hull = convexHull(pts);
-// hull está em ordem Anti-Horária (CCW)
-
-ld area  = hullArea(hull);
-ld perim = hullPerimeter(hull);
+Point polygonCentroid(const vector<Point>& poly) {
+    ld area = 0, cx = 0, cy = 0;
+    int n = poly.size();
+    for (int i = 0; i < n; i++) {
+        Point A = poly[i], B = poly[(i+1)%n];
+        ld c = A.cross(B);
+        area += c;
+        cx += (A.x + B.x) * c;
+        cy += (A.y + B.y) * c;
+    }
+    area /= 2.0L;
+    return {cx / (6.0L * area), cy / (6.0L * area)};
+}
 ```
-
-**Modo com colineares:**
-```cpp
-// Por padrão, pontos colineares nas arestas são removidos.
-// Para mantê-los (ex: contar pontos na borda):
-vector<Point> hull = convexHull(pts, true);
-```
-
-> **Use o Fecho Convexo quando** o problema pedir o "menor cerca" em torno de pontos, calcular o diâmetro de um conjunto de pontos (par mais distante) ou reduzir o espaço de busca a apenas os vértices extremos.
 
 ---
 
-## Polígono (polygon.cpp)
+## Verificar Convexidade — O(N)
+
+Um polígono é convexo se todos os giros consecutivos são no mesmo sentido.
 
 ```cpp
-vector<Point> poly = { ... }; // Vértices em ordem (CCW ou CW)
-
-ld area  = polygonArea(poly);      // Área via Shoelace — O(N)
-ld perim = polygonPerimeter(poly); // Perímetro — O(N)
-Point c  = polygonCentroid(poly);  // Centro de massa — O(N)
-bool cv  = isConvex(poly);         // É convexo? — O(N)
-
-// Ponto P dentro do polígono?
-int res = pointInPolygon(P, poly);
-//  1 → dentro
-//  0 → na borda (sobre uma aresta)
-// -1 → fora
+bool isConvex(const vector<Point>& poly) {
+    int n = poly.size(), sign = 0;
+    for (int i = 0; i < n; i++) {
+        ld c = (poly[(i+1)%n]-poly[i]).cross(poly[(i+2)%n]-poly[(i+1)%n]);
+        if (abs(c) > EPS) {
+            int s = (c > 0) ? 1 : -1;
+            if (sign == 0) sign = s;
+            else if (sign != s) return false;
+        }
+    }
+    return true;
+}
 ```
 
-**Fórmula do Cadarço (Shoelace):**
+---
 
-$$\text{Área} = \frac{1}{2} \left| \sum_{i=0}^{n-1} (x_i \cdot y_{i+1} - x_{i+1} \cdot y_i) \right|$$
+## Fecho Convexo — Monotone Chain — O(N log N)
 
-O sinal da área não-absoluta (`polygonAreaSigned`) indica a orientação dos vértices: positivo = CCW, negativo = CW.
+Constrói o menor polígono convexo que contém todos os N pontos. O algoritmo de Andrew varre os pontos da esquerda para a direita construindo as cadeias inferior e superior separadamente.
 
-> **Use `pointInPolygon` com cuidado em bordas:** o retorno `0` indica que o ponto está exatamente sobre uma aresta. Decida antes como tratar esse caso de acordo com o enunciado do problema.
+```cpp
+vector<Point> convexHull(vector<Point> pts, bool incluirColineares = false) {
+    int n = pts.size();
+    if (n < 2) return pts;
+    sort(pts.begin(), pts.end());
+    pts.erase(unique(pts.begin(), pts.end()), pts.end());
+    n = pts.size();
+    if (n < 2) return pts;
+
+    vector<Point> hull;
+    hull.reserve(2 * n);
+
+    // Cadeia inferior
+    for (int i = 0; i < n; i++) {
+        while (hull.size() >= 2) {
+            ld c = cross(hull[hull.size()-2], hull.back(), pts[i]);
+            if (c < (incluirColineares ? -EPS : EPS)) hull.pop_back();
+            else break;
+        }
+        hull.push_back(pts[i]);
+    }
+
+    // Cadeia superior
+    int lower = hull.size();
+    for (int i = n-2; i >= 0; i--) {
+        while ((int)hull.size() > lower) {
+            ld c = cross(hull[hull.size()-2], hull.back(), pts[i]);
+            if (c < (incluirColineares ? -EPS : EPS)) hull.pop_back();
+            else break;
+        }
+        hull.push_back(pts[i]);
+    }
+
+    hull.pop_back(); // primeiro ponto adicionado duas vezes
+    return hull;     // vértices em ordem CCW
+}
+```
+
+**Utilitários do fecho convexo:**
+
+```cpp
+ld hullArea(const vector<Point>& hull) {
+    return polygonArea(hull);
+}
+
+ld hullPerimeter(const vector<Point>& hull) {
+    return polygonPerimeter(hull);
+}
+```
+
+> **Use o Fecho Convexo quando** o problema pedir o "menor cerca" em torno de pontos, calcular o diâmetro de um conjunto de pontos (par mais distante via Rotating Calipers) ou reduzir o espaço de busca aos vértices extremos.
+
+---
+
+## Teorema de Pick
+
+Para polígonos com vértices em pontos inteiros:
+
+```
+Área = I + B/2 − 1
+```
+
+Onde I = pontos inteiros **dentro** do polígono, B = pontos inteiros **na borda**.
+
+Logo: `I = Área − B/2 + 1` e `B = Σᵢ mdc(|Δx|, |Δy|)` (soma dos MDCs de cada aresta).
+
+```cpp
+long long pontosNaBorda(const vector<Point>& poly) {
+    long long B = 0;
+    int n = poly.size();
+    for (int i = 0; i < n; i++) {
+        long long dx = abs((long long)(poly[(i+1)%n].x - poly[i].x));
+        long long dy = abs((long long)(poly[(i+1)%n].y - poly[i].y));
+        B += __gcd(dx, dy);
+    }
+    return B;
+}
+// Área usando Shoelace (inteiros) → sem divisão por 2 ainda
+// Área_2x = valor inteiro exato da fórmula de Shoelace sem o /2
+// I = (Área_2x - B + 2) / 2
+```
 
 ---
 
 ## Referência Rápida
 
-| Problema | Função | Arquivo |
+| Problema | Função | Complexidade |
 |---|---|---|
-| Orientação de 3 pontos | `orient(A, B, C)` | `cross_product` |
-| Segmentos se cruzam? | `segmentsIntersect(A, B, C, D)` | `cross_product` |
-| Ponto de cruzamento de retas | `lineIntersection(A, B, C, D)` | `cross_product` |
-| Área de triângulo | `triangleArea(A, B, C)` | `cross_product` |
-| Distância ponto–segmento | `distToSegment(P, A, B)` | `point_vector` |
-| Fecho convexo | `convexHull(pts)` | `convex_hull` |
-| Área de polígono | `polygonArea(poly)` | `polygon` |
-| Ponto dentro de polígono | `pointInPolygon(P, poly)` | `polygon` |
+| Área do polígono | `polygonArea` | O(N) |
+| Ponto dentro? | `pointInPolygon` | O(N) |
+| Centróide | `polygonCentroid` | O(N) |
+| É convexo? | `isConvex` | O(N) |
+| Fecho convexo | `convexHull` | O(N log N) |
+| Pontos inteiros na borda | `pontosNaBorda` + MDC | O(N) |
+| Pontos inteiros dentro | Teorema de Pick | O(N) |
+| Orientação de 3 pontos | `orient(A,B,C)` | O(1) |
+| Segmentos se cruzam? | `segmentsIntersect` | O(1) |
+| Ponto de cruzamento | `lineIntersection` | O(1) |

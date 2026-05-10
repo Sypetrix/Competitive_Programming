@@ -1,100 +1,204 @@
-# Travessia em Grids (Grid Traversal)
+# Travessia em Grids (Grids and Matrices)
 
-Em muitos problemas, mapas, labirintos e tabuleiros são representados por matrizes 2D. Em vez de construirmos um grafo explícito (com Listas de Adjacência) e desperdiçarmos memória, tratamos o Grid como um **Grafo Implícito**, onde cada célula é um vértice e o deslocamento para células vizinhas representa as arestas.
+Em muitos problemas, mapas, labirintos e tabuleiros são representados por matrizes 2D. Em vez de construir um grafo explícito, tratamos o grid como um **grafo implícito**: cada célula é um vértice e o deslocamento para células vizinhas representa as arestas.
 
 ---
 
 ## Visão Geral
 
-| Técnica / Algoritmo | Estrutura Base | Utilização Típica | Complexidade |
+| Técnica | Estrutura | Complexidade | Uso típico |
 |---|---|---|---|
-| **DFS (Flood Fill)** | Recursão (Call Stack) | Contar área de ilhas, pintar/marcar regiões conectadas. | O(L * C) |
-| **BFS (Shortest Path)** | `std::queue` | Encontrar a distância mínima (menor caminho) sem pesos. | O(L * C) |
+| DFS (Flood Fill) | Recursão / Stack | O(L × C) | Contar área de regiões, marcar componentes |
+| BFS (Menor Caminho) | `std::queue` | O(L × C) | Distância mínima sem pesos |
+| BFS 0-1 | `std::deque` | O(L × C) | Arestas com peso 0 ou 1 |
+| Dijkstra em grid | `priority_queue` | O(LC · log(LC)) | Arestas com pesos variados |
 
-*(Onde `L` é o número de linhas e `C` o número de colunas).*
+*(L = linhas, C = colunas)*
 
 ---
 
-## Vetores de Deslocamento e Limites (Movement)
+## Vetores de Deslocamento
 
-A técnica mais importante para evitar dezenas de `if/else` no seu código. Usamos arrays constantes de deslocamento de linha (`dr`) e coluna (`dc`) para gerar as coordenadas dos vizinhos através de um loop simples.
+Técnica essencial: evita dezenas de `if/else` para cada direção.
 
 ```cpp
-// Deslocamentos em 4 direções (Cima, Baixo, Esquerda, Direita)
-int dr4[] = {-1, 1, 0, 0}; 
+int dr4[] = {-1, 1, 0, 0};
 int dc4[] = {0, 0, -1, 1};
 
-// Função para checar se a nova posição (r, c) é válida dentro da matriz R x C
+// 8 direções (inclui diagonais)
+int dr8[] = {-1, 1, 0, 0, -1, -1, 1, 1};
+int dc8[] = {0, 0, -1, 1, -1, 1, -1, 1};
+
 bool isValid(int r, int c, int R, int C) {
     return r >= 0 && r < R && c >= 0 && c < C;
 }
 ```
 
-> **Use Vetores de Deslocamento em** TODOS os problemas de grid. Eles deixam o código muito mais limpo e diminuem drasticamente a chance de você cometer um erro de digitação nos índices.
-
 ---
 
-## DFS em Grids (Flood Fill)
+## DFS — Flood Fill — O(L × C)
 
-A Busca em Profundidade (DFS) é a ferramenta ideal para explorar exaustivamente uma região, de forma análoga ao balde de tinta do MS Paint.
+Explora exaustivamente uma região conectada, como o balde de tinta do MS Paint. Ideal para contar componentes, medir área de ilhas ou marcar regiões.
 
 ```cpp
-int dfs_flood_fill(const vector<vector<int>>& grid, int r, int c, vector<vector<bool>>& visitado) {
-    visitado[r][c] = true;
-    int tamanho_regiao = 1; // Conta a célula atual
+int dfs_flood(const vector<vector<int>>& grid,
+              vector<vector<bool>>& vis, int r, int c) {
+    int R = grid.size(), C = grid[0].size();
+    vis[r][c] = true;
+    int area = 1;
 
     for (int i = 0; i < 4; i++) {
-        int nr = r + dr4[i];
-        int nc = c + dc4[i];
-
-        // Se for válido, não foi visitado e não for obstáculo
-        if (isValid(nr, nc, grid.size(), grid[0].size()) && !visitado[nr][nc] && grid[nr][nc] != 1) {
-            tamanho_regiao += dfs_flood_fill(grid, nr, nc, visitado);
-        }
+        int nr = r + dr4[i], nc = c + dc4[i];
+        if (isValid(nr, nc, R, C) && !vis[nr][nc] && grid[nr][nc] == 1)
+            area += dfs_flood(grid, vis, nr, nc);
     }
-    return tamanho_regiao;
+    return area;
 }
 ```
 
-> **Use a DFS quando** precisar descobrir a quantidade de componentes conexas ("quantas ilhas existem no mapa?") ou o tamanho de uma região específica. 
-> **Atenção:** Em grids gigantescos (ex: $1000 \times 1000$), a DFS recursiva atinge $10^6$ de profundidade e pode causar *Stack Overflow*. Nesses casos raros, prefira a BFS.
+> **Atenção:** DFS recursiva em grids grandes (≥ 1000×1000) pode causar Stack Overflow. Nesses casos, use DFS iterativa com `std::stack` ou prefira BFS.
 
----
-
-## BFS em Grids (Menor Caminho)
-
-A Busca em Largura (BFS) explora o grid em "camadas" radiais a partir do ponto de origem. Por conta disso, ela é a única que **garante o caminho mais curto** num grid não ponderado.
+**DFS iterativa (segura para grids grandes):**
 
 ```cpp
-int bfs_menor_caminho(const vector<vector<int>>& grid, int sr, int sc, int tr, int tc) {
-    int linhas = grid.size(), colunas = grid[0].size();
-    
-    // A matriz de distâncias também funciona como o controle de 'visitados'
-    vector<vector<int>> dist(linhas, vector<int>(colunas, -1));
-    queue<pair<int, int>> fila;
-    
-    fila.push({sr, sc});
-    dist[sr][sc] = 0; // Distância da origem para si mesma é 0
-    
-    while (!fila.empty()) {
-        auto [r, c] = fila.front();
-        fila.pop();
-        
-        if (r == tr && c == tc) return dist[r][c]; // Chegou no destino!
-        
+int dfs_iterativa(const vector<vector<int>>& grid,
+                  vector<vector<bool>>& vis, int sr, int sc) {
+    int R = grid.size(), C = grid[0].size();
+    stack<pair<int,int>> st;
+    st.push({sr, sc});
+    vis[sr][sc] = true;
+    int area = 0;
+
+    while (!st.empty()) {
+        auto [r, c] = st.top(); st.pop();
+        area++;
         for (int i = 0; i < 4; i++) {
-            int nr = r + dr4[i];
-            int nc = c + dc4[i];
-            
-            // Se for válido, for caminhável e AINDA NÃO foi visitado (-1)
-            if (isValid(nr, nc, linhas, colunas) && grid[nr][nc] != 1 && dist[nr][nc] == -1) {
-                dist[nr][nc] = dist[r][c] + 1; // A distância é a do pai + 1
-                fila.push({nr, nc});
+            int nr = r + dr4[i], nc = c + dc4[i];
+            if (isValid(nr, nc, R, C) && !vis[nr][nc] && grid[nr][nc] == 1) {
+                vis[nr][nc] = true;
+                st.push({nr, nc});
             }
         }
     }
-    return -1; // Impossível chegar ao destino
+    return area;
 }
 ```
 
-> **Use a BFS quando** o problema perguntar "qual é o número mínimo de passos para chegar ao destino?" ou "qual é o menor caminho saindo do labirinto?".
+---
+
+## BFS — Menor Caminho — O(L × C)
+
+A BFS explora o grid em "camadas" radiais. A primeira vez que uma célula é alcançada, foi pelo caminho mais curto (em número de passos).
+
+```cpp
+int bfs(const vector<vector<int>>& grid, int sr, int sc, int tr, int tc) {
+    int R = grid.size(), C = grid[0].size();
+    vector<vector<int>> dist(R, vector<int>(C, -1));
+    queue<pair<int,int>> q;
+
+    q.push({sr, sc});
+    dist[sr][sc] = 0;
+
+    while (!q.empty()) {
+        auto [r, c] = q.front(); q.pop();
+
+        if (r == tr && c == tc) return dist[r][c];
+
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dr4[i], nc = c + dc4[i];
+            if (isValid(nr, nc, R, C) && grid[nr][nc] == 1 && dist[nr][nc] == -1) {
+                dist[nr][nc] = dist[r][c] + 1;
+                q.push({nr, nc});
+            }
+        }
+    }
+    return -1; // impossível
+}
+```
+
+---
+
+## BFS Multi-Fonte
+
+Quando há múltiplos pontos de partida (ex: "distância ao obstáculo mais próximo"), inicialize a fila com **todas** as origens antes de começar.
+
+```cpp
+// dist[r][c] = distância da célula (r,c) ao obstáculo mais próximo
+void bfs_multi_fonte(const vector<vector<int>>& grid,
+                     vector<vector<int>>& dist) {
+    int R = grid.size(), C = grid[0].size();
+    queue<pair<int,int>> q;
+    dist.assign(R, vector<int>(C, -1));
+
+    // todas as fontes entram na fila com dist 0
+    for (int r = 0; r < R; r++)
+        for (int c = 0; c < C; c++)
+            if (grid[r][c] == 0) { dist[r][c] = 0; q.push({r, c}); }
+
+    while (!q.empty()) {
+        auto [r, c] = q.front(); q.pop();
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dr4[i], nc = c + dc4[i];
+            if (isValid(nr, nc, R, C) && dist[nr][nc] == -1) {
+                dist[nr][nc] = dist[r][c] + 1;
+                q.push({nr, nc});
+            }
+        }
+    }
+}
+```
+
+---
+
+## BFS 0-1 (Deque BFS)
+
+Quando as arestas têm peso 0 ou 1, a BFS 0-1 com `deque` resolve em O(L × C) sem o overhead do heap do Dijkstra: arestas de peso 0 vão para a **frente** da deque, arestas de peso 1 vão para o **fundo**.
+
+```cpp
+// custo(r, c, nr, nc) retorna 0 ou 1
+vector<vector<int>> bfs_01(const vector<vector<int>>& grid, int sr, int sc) {
+    int R = grid.size(), C = grid[0].size();
+    vector<vector<int>> dist(R, vector<int>(C, INT_MAX));
+    deque<pair<int,int>> dq;
+
+    dist[sr][sc] = 0;
+    dq.push_back({sr, sc});
+
+    while (!dq.empty()) {
+        auto [r, c] = dq.front(); dq.pop_front();
+
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dr4[i], nc = c + dc4[i];
+            if (!isValid(nr, nc, R, C)) continue;
+
+            int w = /* custo da aresta: 0 ou 1 */ 0;
+            if (dist[r][c] + w < dist[nr][nc]) {
+                dist[nr][nc] = dist[r][c] + w;
+                if (w == 0) dq.push_front({nr, nc});
+                else        dq.push_back({nr, nc});
+            }
+        }
+    }
+    return dist;
+}
+```
+
+---
+
+## Quando Usar Cada Técnica
+
+```
+Preciso explorar uma região / contar componentes?
+└── DFS (Flood Fill)
+    └── Grid > 1000×1000? → DFS iterativa ou BFS
+
+Preciso do menor número de passos entre dois pontos?
+├── Todas as arestas valem 1 → BFS
+├── Arestas valem 0 ou 1 → BFS 0-1 com deque
+└── Arestas com pesos variados → Dijkstra
+
+Múltiplos pontos de origem simultaneamente?
+└── BFS Multi-Fonte (inicializa com todas as fontes)
+```
+
+> **Dica de performance:** para BFS/DFS chamadas milhares de vezes, declare a matriz de distâncias/visitados globalmente e use um contador de versão em vez de `fill` a cada chamada.

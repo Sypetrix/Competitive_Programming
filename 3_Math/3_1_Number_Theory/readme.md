@@ -1,6 +1,6 @@
 # Teoria dos Números (Number Theory)
 
-Em maratonas de programação, problemas de Teoria dos Números raramente aceitam soluções de força bruta. Se o problema envolve propriedades de inteiros, divisibilidade, primos ou fatoriais gigantes, você precisará de algoritmos com complexidade de tempo sub-linear, geralmente baseados em matemática discreta pesada.
+Problemas de Teoria dos Números raramente aceitam soluções de força bruta. Se o problema envolve divisibilidade, primos ou fatoriais gigantes, você precisará de algoritmos baseados em matemática discreta com complexidade sub-linear.
 
 ---
 
@@ -8,82 +8,94 @@ Em maratonas de programação, problemas de Teoria dos Números raramente aceita
 
 | Algoritmo / Arquivo | Complexidade | Utilização Típica |
 |---|---|---|
-| `erastotenes_sieve` | O(N log log N) | Pré-computar números primos usando `std::bitset` para economizar memória. |
-| `dividers` | O(√N) ou O(π(N)) | Contar e somar divisores usando fatoração prima. |
-| `euclides` | O(log(min(A, B))) | Encontrar MDC, MMC e o Inverso Modular (para divisão com módulo). |
-| `diophantine` | O(log(min(A, B))) | Encontrar soluções inteiras $(x, y)$ para equações do tipo $Ax + By = C$. |
-| `phi_euler` | O(√N) | Descobrir quantos números menores que $N$ são coprimos a $N$. |
-| `legendre` | O(log_p(N)) | Descobrir a maior potência de um primo $P$ que divide $N!$ (Fatorial). |
-| `cycle_floyd` | O(μ + λ) | Encontrar o início ($\mu$) e o tamanho ($\lambda$) de um ciclo em sequências. |
+| `erastotenes_sieve` | O(N log log N) | Pré-computar primos até 10⁷ |
+| `dividers` | O(√N) ou O(π(N)) | Contar e somar divisores |
+| `euclides` | O(log min(a,b)) | MDC, MMC, Inverso Modular |
+| `diophantine` | O(log min(a,b)) | Soluções inteiras de Ax + By = C |
+| `phi_euler` | O(√N) | Quantidade de coprimos com N |
+| `legendre` | O(log_p N) | Potência de primo em N! |
+| `cycle_floyd` | O(μ + λ) | Início e tamanho de ciclo em sequências |s
 
 ---
 
-## Crivo de Eratóstenes e Fatoração
+## Crivo de Eratóstenes — O(N log log N)
 
-O motor principal para a maioria dos problemas matemáticos. Usamos um `bitset` para comprimir a memória, permitindo gerar primos até $10^7$ quase instantaneamente.
+Gera todos os primos até N. Usando `bitset` para comprimir memória, é viável até ~10⁷ em tempo e espaço razoáveis.
 
 ```cpp
-ll tam_crivo;
 bitset<10000010> bs;
-vector<ll> primos;
+vector<int> primos;
 
-void crivo(ll limite) {
-    tam_crivo = limite + 1;
+void crivo(int limite) {
     bs.set();
     bs[0] = bs[1] = 0;
-
-    for (ll i = 2; i <= tam_crivo; i++) {
+    for (int i = 2; i <= limite; i++) {
         if (bs[i]) {
-            // Otimização: começa a eliminar a partir de i*i
-            for (ll j = i * i; j <= tam_crivo; j += i) bs[j] = 0;
+            for (int j = i * i; j <= limite; j += i) bs[j] = 0;
             primos.push_back(i);
         }
     }
 }
 ```
 
-> **Use o Crivo quando** precisar fazer múltiplas consultas de primalidade ou fatorar diversos números rapidamente. Tentar fatorar $10^5$ números em $O(\sqrt{N})$ sem o crivo pré-computado causará *Time Limit Exceeded* (TLE).
+**Fatoração usando o crivo:**
+
+```cpp
+vector<int> fatorar(int N) {
+    vector<int> fatores;
+    for (int p : primos) {
+        if (p * p > N) break;
+        while (N % p == 0) { fatores.push_back(p); N /= p; }
+    }
+    if (N > 1) fatores.push_back(N);
+    return fatores;
+}
+```
+
+> Use o crivo quando precisar de múltiplas consultas de primalidade ou fatorar muitos números. Fatorar N números em O(√N) cada sem o crivo pode causar TLE.
 
 ---
 
-## Algoritmo de Euclides Estendido e Inverso Modular
-
-O Euclides Estendido não apenas encontra o MDC (Maior Divisor Comum), mas também os coeficientes de Bézout ($x$ e $y$) que satisfazem $Ax + By = MDC(A, B)$. Isso é a base para a divisão modular.
+## MDC, MMC e Euclides Estendido
 
 ```cpp
-ll extGCD(ll a, ll b, ll &x, ll &y) {
-    if (b == 0) {
-        x = 1; y = 0;
-        return a;
-    }
-    ll x1, y1;
-    ll d = extGCD(b, a % b, x1, y1);
+// MDC recursivo — O(log min(a,b))
+long long mdc(long long a, long long b) { return b ? mdc(b, a % b) : a; }
+
+// MMC — cuidado com overflow: divida antes de multiplicar
+long long mmc(long long a, long long b) { return a / mdc(a, b) * b; }
+
+// Euclides Estendido: encontra x, y tais que a*x + b*y = mdc(a,b)
+long long extGCD(long long a, long long b, long long& x, long long& y) {
+    if (b == 0) { x = 1; y = 0; return a; }
+    long long x1, y1;
+    long long d = extGCD(b, a % b, x1, y1);
     x = y1;
     y = x1 - y1 * (a / b);
     return d;
 }
 
-// Divisão com módulo: (A / B) % M = (A * invMod(B, M)) % M
-ll invMod(ll a, ll m) {
-    ll x, y;
-    if (extGCD(a, m, x, y) != 1) return -1; // Não existe inverso
-    return (x % m + m) % m; // Ajuste para C++ (evita módulo negativo)
+// Inverso modular: a^(-1) mod m (requer mdc(a,m) = 1)
+long long invMod(long long a, long long m) {
+    long long x, y;
+    if (extGCD(a, m, x, y) != 1) return -1;
+    return (x % m + m) % m;
 }
 ```
-
-> **Use o Inverso Modular quando** precisar realizar divisões em fórmulas de análise combinatória ($nCr$) sob um módulo primo (como $10^9 + 7$).
 
 ---
 
 ## Equações Diofantinas Lineares
 
-Resolve problemas do tipo "com moedas de valor A e notas de valor B, como pagar exatamente o valor C?".
+Encontra uma solução inteira para **Ax + By = C**.
+
+Solução existe se e somente se `mdc(A, B) | C`.
 
 ```cpp
-bool diophantine(ll a, ll b, ll c, ll &x0, ll &y0, ll &g) {
+bool diofantina(long long a, long long b, long long c,
+                long long& x0, long long& y0, long long& g) {
     g = extGCD(abs(a), abs(b), x0, y0);
-    if (c % g != 0) return false; // C tem que ser múltiplo do MDC(A,B)
-
+    if (c % g != 0) return false;
     x0 *= c / g;
     y0 *= c / g;
     if (a < 0) x0 = -x0;
@@ -92,44 +104,25 @@ bool diophantine(ll a, ll b, ll c, ll &x0, ll &y0, ll &g) {
 }
 ```
 
-> **Use Diofantinas quando** precisar encontrar uma solução inteira para a intersecção de equações de restrição linear.
-
----
-
-## Fórmula de Legendre e "Factovisors"
-
-Se o problema falar em dividir $N!$ (fatorial gigante) por algum número, esqueça os tipos comuns (`long long` estoura em $21!$). A Fórmula de Legendre conta a multiplicidade de um primo $p$ em $N!$.
-
-```cpp
-// Retorna a maior potência do primo 'p' que divide 'n!'
-ll legendre(ll n, ll p) {
-    ll count = 0;
-    while (n > 0) {
-        count += n / p;
-        n /= p;
-    }
-    return count;
-}
+**Família de soluções:** se (x₀, y₀) é uma solução, então todas as soluções são:
+```
+x = x₀ + (b/g)·t
+y = y₀ - (a/g)·t    para qualquer inteiro t
 ```
 
-> **Use Legendre quando** o problema perguntar "quantos zeros à direita tem $N!$?" (basta contar as potências de 5) ou se $M$ divide $N!$.
-
 ---
 
-## Função Totiente de Euler ($\phi$) e Divisores
+## Função Totiente de Euler — φ(N)
 
-A função $\phi(N)$ retorna a quantidade de inteiros de $1$ a $N$ que são coprimos com $N$ (ou seja, $MDC(x, N) = 1$). A contagem de divisores usa a fatoração prima.
+φ(N) = quantidade de inteiros em [1, N] coprimos com N.
 
 ```cpp
-// Se a fatoração prima de N é p1^a * p2^b...
-// A quantidade de divisores é (a + 1) * (b + 1)...
-
-ll phi(ll n) {
-    ll result = n;
-    for (ll i = 2; i * i <= n; i++) {
+long long phi(long long n) {
+    long long result = n;
+    for (long long i = 2; i * i <= n; i++) {
         if (n % i == 0) {
             while (n % i == 0) n /= i;
-            result -= result / i; // Fórmula de Euler
+            result -= result / i;
         }
     }
     if (n > 1) result -= result / n;
@@ -137,26 +130,114 @@ ll phi(ll n) {
 }
 ```
 
-> **Use a Função $\phi$ (Phi) quando** trabalhar com o Teorema de Euler ou criptografia (RSA).
+**Propriedades úteis:**
+- φ(p) = p − 1 para p primo
+- φ(pᵏ) = pᵏ − pᵏ⁻¹
+- φ é multiplicativa: se mdc(a,b) = 1, então φ(ab) = φ(a)·φ(b)
+- **Teorema de Euler:** a^φ(m) ≡ 1 (mod m) quando mdc(a,m) = 1
 
 ---
 
-## Busca de Ciclos (Algoritmo de Floyd)
+## Contagem e Soma de Divisores
 
-Também conhecido como o algoritmo da "Lebre e da Tartaruga" (Hare and Tortoise). Ocupa apenas $O(1)$ de memória para encontrar ciclos numa sequência pseudo-aleatória $x_{i} = f(x_{i-1})$.
+Se N = p₁^a₁ · p₂^a₂ · … · pₖ^aₖ:
+
+- **Número de divisores:** (a₁ + 1)(a₂ + 1)…(aₖ + 1)
+- **Soma dos divisores:** Π [(pᵢ^(aᵢ+1) − 1) / (pᵢ − 1)]
 
 ```cpp
-pair<int, int> floyd_cycle_finding(int (*func)(int), int x0) {
-    int tart = func(x0), lebr = func(func(x0));
-
-    // Fase 1: Achando a interseção
-    while (tart != lebr) {
-        tart = func(tart);
-        lebr = func(func(lebr));
+long long numDiv(long long N) {
+    long long ans = 1;
+    for (long long p : primos) {
+        if (p * p > N) break;
+        int exp = 0;
+        while (N % p == 0) { N /= p; exp++; }
+        if (exp) ans *= (exp + 1);
     }
-    // Fase 2 e 3: Buscando o início (mu) e tamanho (lambda)
-    // (Veja a implementação completa no arquivo cycle_floyd.cpp)
+    if (N > 1) ans *= 2; // primo residual
+    return ans;
 }
 ```
 
-> **Use a Busca de Ciclos de Floyd quando** o limite de memória for restrito (não dá para salvar os estados num `std::set`) ou quando o espaço de estados for muito denso.
+---
+
+## Fórmula de Legendre
+
+Maior potência do primo `p` que divide `n!`:
+
+```
+νₚ(n!) = ⌊n/p⌋ + ⌊n/p²⌋ + ⌊n/p³⌋ + …
+```
+
+```cpp
+long long legendre(long long n, long long p) {
+    long long count = 0;
+    while (n > 0) { count += n / p; n /= p; }
+    return count;
+}
+```
+
+**Aplicações:**
+- Zeros à direita de N! → `legendre(N, 5)`
+- Verificar se M divide N! → compare a potência de cada primo em M com `legendre(N, p)`
+
+---
+
+## Algoritmo de Floyd (Detecção de Ciclos)
+
+Encontra o início (μ) e tamanho (λ) de um ciclo na sequência xᵢ = f(xᵢ₋₁) usando apenas O(1) de memória.
+
+```cpp
+pair<int,int> floyd(auto f, int x0) {
+    // Fase 1: encontra o encontro
+    int tartaruga = f(x0), lebre = f(f(x0));
+    while (tartaruga != lebre) {
+        tartaruga = f(tartaruga);
+        lebre = f(f(lebre));
+    }
+
+    // Fase 2: encontra o início do ciclo (μ)
+    int mu = 0;
+    tartaruga = x0;
+    while (tartaruga != lebre) {
+        tartaruga = f(tartaruga);
+        lebre = f(lebre);
+        mu++;
+    }
+
+    // Fase 3: encontra o tamanho do ciclo (λ)
+    int lambda = 1;
+    lebre = f(tartaruga);
+    while (tartaruga != lebre) { lebre = f(lebre); lambda++; }
+
+    return {mu, lambda};
+}
+```
+
+> Use quando o limite de memória impede salvar todos os estados em um `set`. Comum em hashing com ciclos, geradores pseudoaleatórios e problemas de sequências funcionais.
+
+---
+
+## Crivo Segmentado — O(N log log N) com memória O(√N)
+
+Para gerar primos em um intervalo [L, R] grande (L, R até 10¹²), o crivo normal é inviável em memória. O crivo segmentado usa os primos até √R para peneirar blocos.
+
+```cpp
+void crivo_segmentado(long long L, long long R) {
+    int raiz = sqrt(R) + 1;
+    crivo(raiz); // gera primos pequenos até √R
+
+    vector<bool> is_primo(R - L + 1, true);
+    if (L == 1) is_primo[0] = false;
+
+    for (int p : primos) {
+        // primeiro múltiplo de p em [L, R]
+        long long inicio = max((long long)p * p, (L + p - 1) / p * p);
+        for (long long j = inicio; j <= R; j += p)
+            is_primo[j - L] = false;
+    }
+
+    for (long long i = L; i <= R; i++)
+        if (is_primo[i - L]) { /* i é primo */ }
+}
+```
