@@ -1,6 +1,6 @@
 # Fundamentos de Grafos (Graph Basics)
 
-Esta pasta cobre as operações mais fundamentais em grafos: as duas travessias principais (DFS e BFS), detecção de ciclos, identificação de componentes conexas e ordenação topológica. Dominar esses algoritmos é o pré-requisito para tudo que vem depois.
+Esta pasta cobre as operações mais fundamentais em grafos: as duas travessias principais (DFS e BFS), detecção de ciclos, identificação de componentes conexas, ordenação topológica e **pontes/articulações**. Dominar esses algoritmos é o pré-requisito para tudo que vem depois.
 
 ---
 
@@ -8,11 +8,13 @@ Esta pasta cobre as operações mais fundamentais em grafos: as duas travessias 
 
 | Algoritmo / Arquivo | Estrutura Base | Complexidade | Utilização Típica |
 |---|---|---|---|
-| `graph_DFS` | Recursão (Call Stack) | O(V + E) | Travessia, detecção de ciclos, SCCs. |
-| `graph_BFS` | `std::queue` | O(V + E) | Menor caminho (sem pesos), nível de cada nó. |
-| `components` | DFS | O(V + E) | Contar e identificar componentes conexas. |
-| `cycle` | DFS com 3 cores | O(V + E) | Detectar ciclos em grafos direcionados. |
-| `topologic_kahn` | BFS (Kahn's) | O(V + E) | Ordenação topológica, detecção de ciclos. |
+| `graph_DFS` | Recursão (Call Stack) | O(V + E) | Travessia, detecção de ciclos, SCCs |
+| `graph_BFS` | `std::queue` | O(V + E) | Menor caminho (sem pesos), nível de cada nó |
+| `components` | DFS | O(V + E) | Contar e identificar componentes conexas |
+| `cycle` | DFS com 3 cores | O(V + E) | Detectar ciclos em grafos direcionados |
+| `topologic_kahn` | BFS (Kahn's) | O(V + E) | Ordenação topológica, detecção de ciclos |
+| `topologic_dfs` | DFS | O(V + E) | Ordenação topológica via pilha |
+| Pontes e Articulações | DFS | O(V + E) | Arestas e vértices críticos à conectividade |
 
 *(Onde V = número de vértices e E = número de arestas)*
 
@@ -36,7 +38,7 @@ adj[v].push_back(u);
 // Para grafos direcionados, omita a segunda linha.
 ```
 
-> A **Matriz de Adjacência** (`int mat[MAXN][MAXN]`) é uma alternativa viável apenas para grafos densos ou quando $V \leq 1000$. Para $V = 10^5$, ela usa $O(V^2)$ de memória e causa MLE.
+> A **Matriz de Adjacência** (`int mat[MAXN][MAXN]`) é uma alternativa viável apenas para grafos densos ou quando V ≤ 1000. Para V = 10⁵, ela usa O(V²) de memória e causa MLE.
 
 ---
 
@@ -56,7 +58,7 @@ void dfs(int u) {
 }
 ```
 
-> **Use DFS quando** a ordem de visita não importar ou quando precisar explorar toda uma componente. Para grafos muito grandes (V > $10^5$), a DFS recursiva pode causar *Stack Overflow* — nesse caso, implemente com uma `std::stack` explícita.
+> **Use DFS quando** a ordem de visita não importar ou quando precisar explorar toda uma componente. Para grafos muito grandes (V > 10⁵), a DFS recursiva pode causar *Stack Overflow* — nesse caso, implemente com uma `std::stack` explícita.
 
 ---
 
@@ -144,7 +146,7 @@ Um nó com `color == 1` significa que ele está na pilha de chamadas atual — e
 
 ## Ordenação Topológica (Algoritmo de Kahn)
 
-Ordena os vértices de um **grafo direcionado acíclico (DAG)** de forma que toda aresta $u \to v$ satisfaça $u$ antes de $v$ na ordenação. Se o grafo contiver um ciclo, a ordenação é impossível e o algoritmo detecta isso.
+Ordena os vértices de um **grafo direcionado acíclico (DAG)** de forma que toda aresta u → v satisfaça u antes de v na ordenação. Se o grafo contiver um ciclo, a ordenação é impossível e o algoritmo detecta isso.
 
 ```cpp
 int in_degree[MAXN];
@@ -170,9 +172,102 @@ bool topological_sort(int n) {
 // in_degree[v]++;
 ```
 
-**Casos de uso clássicos:**
-- Escalonamento de tarefas com dependências
-- Compilação com dependências entre módulos
-- Verificar se um grafo direcionado é um DAG
+**Casos de uso clássicos:** escalonamento de tarefas com dependências, compilação com dependências entre módulos, verificar se um grafo direcionado é um DAG.
 
 > A ordenação topológica também pode ser obtida via DFS: basta inserir cada vértice em uma pilha ao terminar de processá-lo e depois inverter a ordem. O algoritmo de Kahn é geralmente preferido em maratonas por ser iterativo e detectar ciclos mais naturalmente.
+
+---
+
+## Pontes e Articulações
+
+**Pontes** são arestas cuja remoção desconecta o grafo. **Pontos de articulação** (vértices de corte) são vértices cuja remoção desconecta o grafo. Ambos são encontrados em uma única DFS usando os arrays `tin` (tempo de entrada) e `low` (menor tempo alcançável sem subir pela aresta de árvore que chegou ao nó).
+
+```cpp
+int tin[MAXN], low[MAXN], timer_val;
+bool vis[MAXN];
+
+vector<pair<int,int>> bridges;  // lista de pontes
+vector<int> articulations;      // lista de pontos de articulação
+```
+
+### Pontes — O(V + E)
+
+```cpp
+void dfs_bridge(int u, int parent) {
+    vis[u] = true;
+    tin[u] = low[u] = ++timer_val;
+
+    for (int v : adj[u]) {
+        if (v == parent) continue; // ignora aresta de volta ao pai
+        if (vis[v]) {
+            low[u] = min(low[u], tin[v]);
+        } else {
+            dfs_bridge(v, u);
+            low[u] = min(low[u], low[v]);
+
+            // Se low[v] > tin[u], a aresta u-v é uma ponte
+            if (low[v] > tin[u])
+                bridges.push_back({u, v});
+        }
+    }
+}
+```
+
+> **Atenção com arestas múltiplas:** se o grafo puder ter arestas paralelas, passe o índice da aresta usada em vez do nó pai, e ignore apenas a aresta específica (não todas as arestas para o pai).
+
+### Pontos de Articulação — O(V + E)
+
+```cpp
+void dfs_articulation(int u, int parent) {
+    vis[u] = true;
+    tin[u] = low[u] = ++timer_val;
+    int children = 0; // filhos na árvore DFS
+
+    for (int v : adj[u]) {
+        if (v == parent) continue;
+        if (vis[v]) {
+            low[u] = min(low[u], tin[v]);
+        } else {
+            children++;
+            dfs_articulation(v, u);
+            low[u] = min(low[u], low[v]);
+
+            // u é articulação se:
+            // 1) u é raiz da DFS com 2+ filhos
+            // 2) u não é raiz e low[v] >= tin[u]
+            if (parent == -1 && children > 1)
+                articulations.push_back(u);
+            if (parent != -1 && low[v] >= tin[u])
+                articulations.push_back(u);
+        }
+    }
+}
+```
+
+**Como chamar:**
+```cpp
+// Resetar antes de cada caso de teste
+timer_val = 0;
+fill(vis, vis + n + 1, false);
+bridges.clear();
+articulations.clear();
+
+for (int i = 1; i <= n; i++)
+    if (!vis[i]) {
+        dfs_bridge(i, -1);          // para pontes
+        dfs_articulation(i, -1);    // para articulações
+    }
+
+// Remover duplicatas de articulações (um nó pode ser adicionado múltiplas vezes)
+sort(articulations.begin(), articulations.end());
+articulations.erase(unique(articulations.begin(), articulations.end()), articulations.end());
+```
+
+### Componentes Biconexas (2-Edge / 2-Vertex Connected Components)
+
+Após encontrar as pontes/articulações, é possível condensar o grafo:
+
+- **Componentes 2-edge-connected:** grupos de vértices que permanecem conectados mesmo removendo qualquer aresta — são os nós do grafo condensado, ligados pelas pontes.
+- **Componentes biconexas (2-vertex-connected):** grupos de vértices sem ponto de articulação interno — úteis para problemas de robustez de rede.
+
+> **Use pontes/articulações quando** o problema envolve: "qual servidor desligar/aresta remover desconecta a rede?", "encontrar partes críticas da infraestrutura", ou "condensar o grafo em componentes 2-conectadas para aplicar outra técnica".
