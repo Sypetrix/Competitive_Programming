@@ -10,7 +10,7 @@ Estruturas de sufixos indexam **todos os sufixos** de uma string de uma vez, per
 |---|---|---|---|
 | Suffix Array + LCP | O(N log N) | O(M log N) busca | Substrings distintas, LCP entre sufixos, buscas repetidas |
 | Suffix Automaton | O(N) | O(M) | Contar substrings distintas, número de ocorrências |
-| Trie | O(Σ|Si|) por inserção | O(M) | Busca de prefixo, autocompletar, XOR máximo |
+| Trie | O(Σ\|Si\|) | O(M) | Busca de prefixo, autocompletar, XOR máximo |
 
 ---
 

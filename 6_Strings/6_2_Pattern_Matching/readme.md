@@ -6,11 +6,11 @@ Algoritmos de casamento de padrões encontram ocorrências de uma (ou mais) stri
 
 ## Visão Geral
 
-| Algoritmo | Complexidade | Uso típico |
-|---|---|---|
-| KMP | O(N + M) | Busca de padrão único; contagem de borders |
-| Z-function | O(N) | Ocorrências de prefixo; período mínimo |
-| Aho-Corasick | O(Σ|Pi| + N·|Σ|) | Busca simultânea de múltiplos padrões |
+| Algoritmo | Pré-processamento | Busca | Uso típico |
+|---|---|---|---|
+| KMP | O(M) | O(N) | Busca de padrão único; contagem de borders |
+| Z-function | O(N + M) | O(N + M) | Ocorrências de prefixo; período mínimo da string |
+| Aho-Corasick | O(Σ\|Pi\| * \|Σ\|) | O(N) | Busca simultânea de múltiplos padrões |
 
 ---
 
